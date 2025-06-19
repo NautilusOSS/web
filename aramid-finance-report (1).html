@@ -1,0 +1,3025 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aramid Finance - Interactive Analytics Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: white;
+        position: relative;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .download-buttons {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: flex;
+        gap: 10px;
+      }
+
+      .download-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+
+      .download-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .stat-card h3 {
+        color: #667eea;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+      }
+
+      .stat-card .value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+      }
+
+      .stat-card .label {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .chart-container {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-container h3 {
+        color: #667eea;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .full-width {
+        grid-column: 1 / -1;
+      }
+
+      .heatmap-container {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+      }
+
+      .heatmap-container h3 {
+        color: #667eea;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .heatmap {
+        display: grid;
+        grid-template-columns: 80px repeat(24, 1fr);
+        gap: 2px;
+        margin-top: 20px;
+      }
+
+      .heatmap-header {
+        display: contents;
+      }
+
+      .heatmap-header > div {
+        text-align: center;
+        font-weight: bold;
+        padding: 5px;
+        background: #f8f9fa;
+        border-radius: 5px;
+      }
+
+      .heatmap-row {
+        display: contents;
+      }
+
+      .heatmap-row > div:first-child {
+        text-align: right;
+        padding: 5px;
+        font-weight: bold;
+        background: #f8f9fa;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .heatmap-cell {
+        aspect-ratio: 1;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        color: white;
+        font-weight: bold;
+      }
+
+      .tabs {
+        display: flex;
+        background: white;
+        border-radius: 15px 15px 0 0;
+        overflow: hidden;
+        margin-bottom: 0;
+      }
+
+      .tab {
+        flex: 1;
+        padding: 15px;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        border: none;
+        font-size: 1rem;
+      }
+
+      .tab.active {
+        background: #667eea;
+        color: white;
+      }
+
+      .tab-content {
+        background: white;
+        padding: 25px;
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+      }
+
+      .table-container {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+
+      th {
+        background: #f8f9fa;
+        font-weight: bold;
+        color: #667eea;
+      }
+
+      tr:hover {
+        background: #f5f5f5;
+      }
+
+      .asset-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+      }
+
+      .asset-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .asset-name {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .asset-symbol {
+        background: #667eea;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+      }
+
+      .asset-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+      }
+
+      .metric {
+        text-align: center;
+      }
+
+      .metric-value {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .metric-label {
+        font-size: 0.8rem;
+        color: #666;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 50px;
+        color: white;
+        font-size: 1.2rem;
+      }
+
+      .team-section {
+        margin-bottom: 40px;
+      }
+
+      .team-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .team-member {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+
+      .team-member:hover {
+        transform: translateY(-5px);
+      }
+
+      .member-avatar {
+        font-size: 3rem;
+        margin-bottom: 15px;
+      }
+
+      .team-member h3 {
+        color: #667eea;
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+      }
+
+      .team-member p {
+        color: #666;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+      }
+
+      .member-bio {
+        font-size: 0.8rem;
+        color: #888;
+        font-style: italic;
+      }
+
+      @media (max-width: 768px) {
+        .charts-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .heatmap {
+          grid-template-columns: 60px repeat(12, 1fr);
+          font-size: 0.6rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="download-buttons">
+          <a href="#" class="download-btn" onclick="downloadMarkdown()">📄 Markdown</a>
+          <a href="#" class="download-btn" onclick="downloadPDF()">📊 PDF</a>
+          <a href="#" class="download-btn" onclick="downloadHTML()">🌐 HTML</a>
+        </div>
+        <h1>Aramid Finance Analytics</h1>
+        <p>Comprehensive Analysis Report | September 2024 - May 2025</p>
+      </div>
+
+      <div id="loading" class="loading" style="display: none;">Loading data...</div>
+
+      <div id="dashboard" style="display: block;">
+        <!-- Key Statistics -->
+        <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <h3>📊 Total Transactions</h3>
+                    <div class="value">5,414</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>👥 Unique Wallets</h3>
+                    <div class="value">307</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>👤 Total Users</h3>
+                    <div class="value">307</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>🔄 Returning Users</h3>
+                    <div class="value">207</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>⭐ Power Users</h3>
+                    <div class="value">66</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>👨‍💼 Team</h3>
+                    <div class="value">5 (+3)</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>🎯 Grant</h3>
+                    <div class="value">0</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>💸 Total Cost</h3>
+                    <div class="value">$9,500</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>💎 Total Revenue</h3>
+                    <div class="value">$4,751.74</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>🏆 Block Rewards</h3>
+                    <div class="value">$4,267.4</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>💰 Fees (0.1%)</h3>
+                    <div class="value">$484.34</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>🔥 Burn Rate</h3>
+                    <div class="value">$1,000/mo</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>⚔️ Soldiers</h3>
+                    <div class="value">4</div>
+                </div>
+            
+                <div class="stat-card">
+                    <h3>🏆 Average Block Rewards</h3>
+                    <div class="value">$914.03/mo</div>
+                </div>
+            </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid">
+          <div class="chart-container">
+            <h3>Transaction Type Distribution</h3>
+            <canvas id="transactionTypeChart" width="639" height="639" style="display: block; box-sizing: border-box; height: 319px; width: 319px;"></canvas>
+          </div>
+          <div class="chart-container">
+            <h3>User Engagement</h3>
+            <canvas id="userEngagementChart" width="639" height="319" style="display: block; box-sizing: border-box; height: 159px; width: 319px;"></canvas>
+          </div>
+          <div class="chart-container">
+            <h3>Revenue Breakdown</h3>
+            <canvas id="revenueChart" width="639" height="639" style="display: block; box-sizing: border-box; height: 319px; width: 319px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Activity Heatmap -->
+        <div class="heatmap-container">
+          <h3>Activity Heatmap (Transactions by Day/Hour)</h3>
+          <div id="heatmap" class="heatmap"><div class="heatmap-header"><div></div><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div><div>19</div><div>20</div><div>21</div><div>22</div><div>23</div></div><div class="heatmap-row"><div>Monday</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2627118644067797)" title="Monday 0:00 - 31 transactions">31</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3728813559322034)" title="Monday 1:00 - 44 transactions">44</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.22033898305084745)" title="Monday 2:00 - 26 transactions">26</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1694915254237288)" title="Monday 3:00 - 20 transactions">20</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2627118644067797)" title="Monday 4:00 - 31 transactions">31</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4745762711864407)" title="Monday 5:00 - 56 transactions">56</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3389830508474576)" title="Monday 6:00 - 40 transactions">40</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2542372881355932)" title="Monday 7:00 - 30 transactions">30</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2457627118644068)" title="Monday 8:00 - 29 transactions">29</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1440677966101695)" title="Monday 9:00 - 17 transactions">17</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11016949152542373)" title="Monday 10:00 - 13 transactions">13</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.09322033898305085)" title="Monday 11:00 - 11 transactions">11</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11864406779661017)" title="Monday 12:00 - 14 transactions">14</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2966101694915254)" title="Monday 13:00 - 35 transactions">35</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.22033898305084745)" title="Monday 14:00 - 26 transactions">26</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.22033898305084745)" title="Monday 15:00 - 26 transactions">26</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2627118644067797)" title="Monday 16:00 - 31 transactions">31</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4491525423728814)" title="Monday 17:00 - 53 transactions">53</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.22033898305084745)" title="Monday 18:00 - 26 transactions">26</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.5423728813559322)" title="Monday 19:00 - 64 transactions">64</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2627118644067797)" title="Monday 20:00 - 31 transactions">31</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2457627118644068)" title="Monday 21:00 - 29 transactions">29</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.288135593220339)" title="Monday 22:00 - 34 transactions">34</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1271186440677966)" title="Monday 23:00 - 15 transactions">15</div></div><div class="heatmap-row"><div>Tuesday</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2542372881355932)" title="Tuesday 0:00 - 30 transactions">30</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2796610169491525)" title="Tuesday 1:00 - 33 transactions">33</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2033898305084746)" title="Tuesday 2:00 - 24 transactions">24</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.6186440677966102)" title="Tuesday 3:00 - 73 transactions">73</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.5423728813559322)" title="Tuesday 4:00 - 64 transactions">64</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.15254237288135594)" title="Tuesday 5:00 - 18 transactions">18</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.19491525423728814)" title="Tuesday 6:00 - 23 transactions">23</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2033898305084746)" title="Tuesday 7:00 - 24 transactions">24</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.17796610169491525)" title="Tuesday 8:00 - 21 transactions">21</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11016949152542373)" title="Tuesday 9:00 - 13 transactions">13</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11864406779661017)" title="Tuesday 10:00 - 14 transactions">14</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11864406779661017)" title="Tuesday 11:00 - 14 transactions">14</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1864406779661017)" title="Tuesday 12:00 - 22 transactions">22</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3389830508474576)" title="Tuesday 13:00 - 40 transactions">40</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4661016949152542)" title="Tuesday 14:00 - 55 transactions">55</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4406779661016949)" title="Tuesday 15:00 - 52 transactions">52</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4661016949152542)" title="Tuesday 16:00 - 55 transactions">55</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2288135593220339)" title="Tuesday 17:00 - 27 transactions">27</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.19491525423728814)" title="Tuesday 18:00 - 23 transactions">23</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3135593220338983)" title="Tuesday 19:00 - 37 transactions">37</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.15254237288135594)" title="Tuesday 20:00 - 18 transactions">18</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1440677966101695)" title="Tuesday 21:00 - 17 transactions">17</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11864406779661017)" title="Tuesday 22:00 - 14 transactions">14</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.211864406779661)" title="Tuesday 23:00 - 25 transactions">25</div></div><div class="heatmap-row"><div>Wednesday</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1864406779661017)" title="Wednesday 0:00 - 22 transactions">22</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2457627118644068)" title="Wednesday 1:00 - 29 transactions">29</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3813559322033898)" title="Wednesday 2:00 - 45 transactions">45</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3474576271186441)" title="Wednesday 3:00 - 41 transactions">41</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2796610169491525)" title="Wednesday 4:00 - 33 transactions">33</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3559322033898305)" title="Wednesday 5:00 - 42 transactions">42</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.13559322033898305)" title="Wednesday 6:00 - 16 transactions">16</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.16101694915254236)" title="Wednesday 7:00 - 19 transactions">19</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.059322033898305086)" title="Wednesday 8:00 - 7 transactions">7</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.15254237288135594)" title="Wednesday 9:00 - 18 transactions">18</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.17796610169491525)" title="Wednesday 10:00 - 21 transactions">21</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.15254237288135594)" title="Wednesday 11:00 - 18 transactions">18</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1864406779661017)" title="Wednesday 12:00 - 22 transactions">22</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2542372881355932)" title="Wednesday 13:00 - 30 transactions">30</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1864406779661017)" title="Wednesday 14:00 - 22 transactions">22</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4067796610169492)" title="Wednesday 15:00 - 48 transactions">48</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2966101694915254)" title="Wednesday 16:00 - 35 transactions">35</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3220338983050847)" title="Wednesday 17:00 - 38 transactions">38</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2966101694915254)" title="Wednesday 18:00 - 35 transactions">35</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3813559322033898)" title="Wednesday 19:00 - 45 transactions">45</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.5932203389830508)" title="Wednesday 20:00 - 70 transactions">70</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3050847457627119)" title="Wednesday 21:00 - 36 transactions">36</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3898305084745763)" title="Wednesday 22:00 - 46 transactions">46</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2542372881355932)" title="Wednesday 23:00 - 30 transactions">30</div></div><div class="heatmap-row"><div>Thursday</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3050847457627119)" title="Thursday 0:00 - 36 transactions">36</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4491525423728814)" title="Thursday 1:00 - 53 transactions">53</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3474576271186441)" title="Thursday 2:00 - 41 transactions">41</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1864406779661017)" title="Thursday 3:00 - 22 transactions">22</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.19491525423728814)" title="Thursday 4:00 - 23 transactions">23</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1864406779661017)" title="Thursday 5:00 - 22 transactions">22</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2796610169491525)" title="Thursday 6:00 - 33 transactions">33</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.211864406779661)" title="Thursday 7:00 - 25 transactions">25</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2542372881355932)" title="Thursday 8:00 - 30 transactions">30</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.19491525423728814)" title="Thursday 9:00 - 23 transactions">23</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11016949152542373)" title="Thursday 10:00 - 13 transactions">13</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.06779661016949153)" title="Thursday 11:00 - 8 transactions">8</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2627118644067797)" title="Thursday 12:00 - 31 transactions">31</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2457627118644068)" title="Thursday 13:00 - 29 transactions">29</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2966101694915254)" title="Thursday 14:00 - 35 transactions">35</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4491525423728814)" title="Thursday 15:00 - 53 transactions">53</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3050847457627119)" title="Thursday 16:00 - 36 transactions">36</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3474576271186441)" title="Thursday 17:00 - 41 transactions">41</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.7627118644067796)" title="Thursday 18:00 - 90 transactions">90</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3474576271186441)" title="Thursday 19:00 - 41 transactions">41</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3813559322033898)" title="Thursday 20:00 - 45 transactions">45</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3644067796610169)" title="Thursday 21:00 - 43 transactions">43</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2288135593220339)" title="Thursday 22:00 - 27 transactions">27</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4067796610169492)" title="Thursday 23:00 - 48 transactions">48</div></div><div class="heatmap-row"><div>Friday</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4491525423728814)" title="Friday 0:00 - 53 transactions">53</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3389830508474576)" title="Friday 1:00 - 40 transactions">40</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.576271186440678)" title="Friday 2:00 - 68 transactions">68</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.288135593220339)" title="Friday 3:00 - 34 transactions">34</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3220338983050847)" title="Friday 4:00 - 38 transactions">38</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.16101694915254236)" title="Friday 5:00 - 19 transactions">19</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.211864406779661)" title="Friday 6:00 - 25 transactions">25</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2033898305084746)" title="Friday 7:00 - 24 transactions">24</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.0847457627118644)" title="Friday 8:00 - 10 transactions">10</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.07627118644067797)" title="Friday 9:00 - 9 transactions">9</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.16101694915254236)" title="Friday 10:00 - 19 transactions">19</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3305084745762712)" title="Friday 11:00 - 39 transactions">39</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2711864406779661)" title="Friday 12:00 - 32 transactions">32</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2288135593220339)" title="Friday 13:00 - 27 transactions">27</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3559322033898305)" title="Friday 14:00 - 42 transactions">42</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.19491525423728814)" title="Friday 15:00 - 23 transactions">23</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3050847457627119)" title="Friday 16:00 - 36 transactions">36</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3559322033898305)" title="Friday 17:00 - 42 transactions">42</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.6440677966101694)" title="Friday 18:00 - 76 transactions">76</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 1)" title="Friday 19:00 - 118 transactions">118</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.5338983050847458)" title="Friday 20:00 - 63 transactions">63</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3728813559322034)" title="Friday 21:00 - 44 transactions">44</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3305084745762712)" title="Friday 22:00 - 39 transactions">39</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.19491525423728814)" title="Friday 23:00 - 23 transactions">23</div></div><div class="heatmap-row"><div>Saturday</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3220338983050847)" title="Saturday 0:00 - 38 transactions">38</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3050847457627119)" title="Saturday 1:00 - 36 transactions">36</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3305084745762712)" title="Saturday 2:00 - 39 transactions">39</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2288135593220339)" title="Saturday 3:00 - 27 transactions">27</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.16101694915254236)" title="Saturday 4:00 - 19 transactions">19</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1440677966101695)" title="Saturday 5:00 - 17 transactions">17</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.17796610169491525)" title="Saturday 6:00 - 21 transactions">21</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.09322033898305085)" title="Saturday 7:00 - 11 transactions">11</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.059322033898305086)" title="Saturday 8:00 - 7 transactions">7</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.0847457627118644)" title="Saturday 9:00 - 10 transactions">10</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.09322033898305085)" title="Saturday 10:00 - 11 transactions">11</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11016949152542373)" title="Saturday 11:00 - 13 transactions">13</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1694915254237288)" title="Saturday 12:00 - 20 transactions">20</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2542372881355932)" title="Saturday 13:00 - 30 transactions">30</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2627118644067797)" title="Saturday 14:00 - 31 transactions">31</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3135593220338983)" title="Saturday 15:00 - 37 transactions">37</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.5423728813559322)" title="Saturday 16:00 - 64 transactions">64</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.19491525423728814)" title="Saturday 17:00 - 23 transactions">23</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4067796610169492)" title="Saturday 18:00 - 48 transactions">48</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3898305084745763)" title="Saturday 19:00 - 46 transactions">46</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4067796610169492)" title="Saturday 20:00 - 48 transactions">48</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2627118644067797)" title="Saturday 21:00 - 31 transactions">31</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3983050847457627)" title="Saturday 22:00 - 47 transactions">47</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3050847457627119)" title="Saturday 23:00 - 36 transactions">36</div></div><div class="heatmap-row"><div>Sunday</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4576271186440678)" title="Sunday 0:00 - 54 transactions">54</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3135593220338983)" title="Sunday 1:00 - 37 transactions">37</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.17796610169491525)" title="Sunday 2:00 - 21 transactions">21</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.22033898305084745)" title="Sunday 3:00 - 26 transactions">26</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1694915254237288)" title="Sunday 4:00 - 20 transactions">20</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1016949152542373)" title="Sunday 5:00 - 12 transactions">12</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.15254237288135594)" title="Sunday 6:00 - 18 transactions">18</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.0423728813559322)" title="Sunday 7:00 - 5 transactions">5</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2627118644067797)" title="Sunday 8:00 - 31 transactions">31</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1016949152542373)" title="Sunday 9:00 - 12 transactions">12</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.11864406779661017)" title="Sunday 10:00 - 14 transactions">14</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.06779661016949153)" title="Sunday 11:00 - 8 transactions">8</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.17796610169491525)" title="Sunday 12:00 - 21 transactions">21</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2457627118644068)" title="Sunday 13:00 - 29 transactions">29</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2966101694915254)" title="Sunday 14:00 - 35 transactions">35</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2033898305084746)" title="Sunday 15:00 - 24 transactions">24</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3050847457627119)" title="Sunday 16:00 - 36 transactions">36</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.3220338983050847)" title="Sunday 17:00 - 38 transactions">38</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.22033898305084745)" title="Sunday 18:00 - 26 transactions">26</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2796610169491525)" title="Sunday 19:00 - 33 transactions">33</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.2542372881355932)" title="Sunday 20:00 - 30 transactions">30</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.4830508474576271)" title="Sunday 21:00 - 57 transactions">57</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.5169491525423728)" title="Sunday 22:00 - 61 transactions">61</div><div class="heatmap-cell" style="background-color: rgba(102, 126, 234, 0.1440677966101695)" title="Sunday 23:00 - 17 transactions">17</div></div></div>
+        </div>
+
+        <!-- Monthly User Dynamics -->
+        <div class="chart-container full-width">
+          <h3>Monthly User Dynamics</h3>
+          <canvas id="monthlyUsersChart" width="2238" height="1119" style="display: block; box-sizing: border-box; height: 559px; width: 1119px;"></canvas>
+        </div>
+
+        <!-- Asset Analysis Tabs -->
+        <div class="tabs">
+          <button class="tab active" onclick="showTab('assets')">
+            Asset Analysis
+          </button>
+          <button class="tab" onclick="showTab('leaderboards')">
+            Leaderboards
+          </button>
+          <button class="tab" onclick="showTab('timeSeries')">
+            Time Series
+          </button>
+        </div>
+
+        <!-- Asset Analysis Content -->
+        <div id="assets" class="tab-content">
+          <div style="text-align: center; margin-bottom: 20px">
+            <button id="valueToggle" onclick="toggleValueDisplay()" style="
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 1rem;
+              ">
+              Show VOI Values
+            </button>
+          </div>
+          <div id="assetsContent">
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">Voi</div>
+                                <div class="asset-symbol">VOI</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">3,321</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">271</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">258,665,094.245</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">77,887.713</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">+44,526,688.06</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">$272,802.51</div>
+                                    <div class="metric-label">Total USD Value</div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">Aramid ALGO</div>
+                                <div class="asset-symbol">aAlgo</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">108</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">31</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">13,992.228</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">129.558</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">4,117.735</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">$454.72</div>
+                                    <div class="metric-label">Total USD Value</div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">Aramid USDC</div>
+                                <div class="asset-symbol">aUSDC</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">1,812</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">83</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">187,497.97</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">103.476</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">24,161.911</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">$187,814.53</div>
+                                    <div class="metric-label">Total USD Value</div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">Aramid GOLD</div>
+                                <div class="asset-symbol">aGOLD</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">1</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">1</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">0.1</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">0.1</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">0.1</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">$0</div>
+                                    <div class="metric-label">Total USD Value</div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">UNIT</div>
+                                <div class="asset-symbol">UNIT</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">146</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">25</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">104,082.788698</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">712.895813</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">+72,607.409095</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">$23,140.8</div>
+                                    <div class="metric-label">Total USD Value</div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">DeFi-nite</div>
+                                <div class="asset-symbol">Finite</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">8</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">3</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">17,083.356956</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">2,135.419619</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">17,083.356956</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">$123.25</div>
+                                    <div class="metric-label">Total USD Value</div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">Vote Coin</div>
+                                <div class="asset-symbol">Vote</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">6</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">3</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">135.036676</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">22.506113</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">125.982236</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">$1.68</div>
+                                    <div class="metric-label">Total USD Value</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+        </div>
+
+        <!-- Leaderboards Content -->
+        <div id="leaderboards" class="tab-content" style="display: none">
+          <div id="leaderboardsContent">
+                        <h3>Voi (VOI) - Top Wallets by Frequency</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>BUD2763FMK6EYVKGHWWU...</td>
+                                                <td>1,218</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>TP33CGHWFSRX5FPVRUF2...</td>
+                                                <td>112</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>6FBTX2L53LJGDJ6IVK6I...</td>
+                                                <td>106</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>4</td>
+                                                <td>GFFFCWJM623AJJGRWPUR...</td>
+                                                <td>75</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>5</td>
+                                                <td>VVNPL3MM2XWE6XGVP6IL...</td>
+                                                <td>67</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>6</td>
+                                                <td>CL47LJ4ZY5CV4CY7MRJ2...</td>
+                                                <td>64</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>7</td>
+                                                <td>VOIUK3B5KQXVMVMYMLZO...</td>
+                                                <td>63</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>8</td>
+                                                <td>NFZYPGTKBAA2WNR2N4G7...</td>
+                                                <td>53</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>9</td>
+                                                <td>6Q6JTOFPBP2NMQW2CIHJ...</td>
+                                                <td>51</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>10</td>
+                                                <td>FZPGANXMQIHVSWYN6ZXS...</td>
+                                                <td>48</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 style="margin-top: 30px;">Voi (VOI) - Top Wallets by Volume</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>BUD2763FMK6EYVKGHWWU...</td>
+                                                <td>48,846,387.587</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>GFFFCWJM623AJJGRWPUR...</td>
+                                                <td>33,008,025.157</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>CIM3JJWL4RIY4KFF3QU4...</td>
+                                                <td>23,500,000</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>4</td>
+                                                <td>6FBTX2L53LJGDJ6IVK6I...</td>
+                                                <td>17,372,119.129</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>5</td>
+                                                <td>TP33CGHWFSRX5FPVRUF2...</td>
+                                                <td>14,241,587.34</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>6</td>
+                                                <td>PE7LEK6SMYSK7RF2UXR6...</td>
+                                                <td>13,762,132.092</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>7</td>
+                                                <td>63VHG2ME45CQC6GSX3GQ...</td>
+                                                <td>10,758,407.868</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>8</td>
+                                                <td>2RMPWZ6VDF5FKNIWLQQR...</td>
+                                                <td>8,395,558.131</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>9</td>
+                                                <td>VVNPL3MM2XWE6XGVP6IL...</td>
+                                                <td>7,856,884.217</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>10</td>
+                                                <td>S6MJVM6H726IYIBKRDXM...</td>
+                                                <td>7,499,500</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>Aramid ALGO (aAlgo) - Top Wallets by Frequency</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>P66R6HKPOVBKN7OY2LS7...</td>
+                                                <td>33</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>11</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>SI7F2AZF2747JPYBFAOC...</td>
+                                                <td>5</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>4</td>
+                                                <td>KRGQTWOEDRJ7476DIORQ...</td>
+                                                <td>5</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>5</td>
+                                                <td>VVNPL3MM2XWE6XGVP6IL...</td>
+                                                <td>5</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>6</td>
+                                                <td>LPFB7Y6QX2GJILI45MVS...</td>
+                                                <td>5</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>7</td>
+                                                <td>HSKPPQFJF2P6PH3M2BYE...</td>
+                                                <td>4</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>8</td>
+                                                <td>G2OYAUKAEINBZ4YHUDYD...</td>
+                                                <td>3</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>9</td>
+                                                <td>6ERZOATYULXYOW77NKMN...</td>
+                                                <td>3</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>10</td>
+                                                <td>6Q6JTOFPBP2NMQW2CIHJ...</td>
+                                                <td>3</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 style="margin-top: 30px;">Aramid ALGO (aAlgo) - Top Wallets by Volume</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>VVNPL3MM2XWE6XGVP6IL...</td>
+                                                <td>4,066.637</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>GAS3S2BWNK6WN7OG3AH3...</td>
+                                                <td>3,996</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>P66R6HKPOVBKN7OY2LS7...</td>
+                                                <td>2,647.7</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>4</td>
+                                                <td>SI7F2AZF2747JPYBFAOC...</td>
+                                                <td>1,599.989</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>5</td>
+                                                <td>KRGQTWOEDRJ7476DIORQ...</td>
+                                                <td>817.224</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>6</td>
+                                                <td>XN5A4VL7NE3K6CCSYJQ7...</td>
+                                                <td>299</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>7</td>
+                                                <td>VFR4XCDMAXMDL2EPK5E6...</td>
+                                                <td>175.824</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>8</td>
+                                                <td>LPFB7Y6QX2GJILI45MVS...</td>
+                                                <td>74.456</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>9</td>
+                                                <td>GC7CLH2I6WR3BLDQHRQ2...</td>
+                                                <td>59.94</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>10</td>
+                                                <td>6ERZOATYULXYOW77NKMN...</td>
+                                                <td>57.942</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>Aramid USDC (aUSDC) - Top Wallets by Frequency</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>BUD2763FMK6EYVKGHWWU...</td>
+                                                <td>1,287</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>VVNPL3MM2XWE6XGVP6IL...</td>
+                                                <td>65</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>62</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>4</td>
+                                                <td>6Q6JTOFPBP2NMQW2CIHJ...</td>
+                                                <td>50</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>5</td>
+                                                <td>CL47LJ4ZY5CV4CY7MRJ2...</td>
+                                                <td>49</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>6</td>
+                                                <td>KUNLFEIZM4DIQALHP47X...</td>
+                                                <td>31</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>7</td>
+                                                <td>TP33CGHWFSRX5FPVRUF2...</td>
+                                                <td>29</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>8</td>
+                                                <td>VOIUK3B5KQXVMVMYMLZO...</td>
+                                                <td>19</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>9</td>
+                                                <td>EVWYE75KM6C7BP3KJLOK...</td>
+                                                <td>17</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>10</td>
+                                                <td>DYX2V5XF4IKOHE55Z63X...</td>
+                                                <td>17</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 style="margin-top: 30px;">Aramid USDC (aUSDC) - Top Wallets by Volume</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>BUD2763FMK6EYVKGHWWU...</td>
+                                                <td>77,281.455</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>23,645.164</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>TP33CGHWFSRX5FPVRUF2...</td>
+                                                <td>14,927.068</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>4</td>
+                                                <td>VVNPL3MM2XWE6XGVP6IL...</td>
+                                                <td>12,607.23</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>5</td>
+                                                <td>2RMPWZ6VDF5FKNIWLQQR...</td>
+                                                <td>11,507.343</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>6</td>
+                                                <td>DYX2V5XF4IKOHE55Z63X...</td>
+                                                <td>6,065.623</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>7</td>
+                                                <td>5BSKQBYELIJNWJ477PPR...</td>
+                                                <td>4,830.884</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>8</td>
+                                                <td>GAS3S2BWNK6WN7OG3AH3...</td>
+                                                <td>3,973.056</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>9</td>
+                                                <td>KEQYAM4NENESW7U3GYCQ...</td>
+                                                <td>3,870.92</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>10</td>
+                                                <td>VOIUK3B5KQXVMVMYMLZO...</td>
+                                                <td>3,450.744</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>Aramid GOLD (aGOLD) - Top Wallets by Frequency</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>ALGONAUTSPIUHDCX3SLF...</td>
+                                                <td>1</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 style="margin-top: 30px;">Aramid GOLD (aGOLD) - Top Wallets by Volume</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>ALGONAUTSPIUHDCX3SLF...</td>
+                                                <td>0.1</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>UNIT (UNIT) - Top Wallets by Frequency</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>75</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>TP33CGHWFSRX5FPVRUF2...</td>
+                                                <td>10</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>FEOBLGMDYO254OR3THUB...</td>
+                                                <td>8</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>4</td>
+                                                <td>GFFFCWJM623AJJGRWPUR...</td>
+                                                <td>6</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>5</td>
+                                                <td>O7FC4I7PX57TSJBN5XOR...</td>
+                                                <td>5</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>6</td>
+                                                <td>LPPROOJ2JQUIT36SWFRS...</td>
+                                                <td>4</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>7</td>
+                                                <td>TBKH6I4TIKO6OV35BBFB...</td>
+                                                <td>4</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>8</td>
+                                                <td>FZPGANXMQIHVSWYN6ZXS...</td>
+                                                <td>4</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>9</td>
+                                                <td>MC75APUKC4IXFP3B62PJ...</td>
+                                                <td>4</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>10</td>
+                                                <td>DORKHJKTKPZPV2ZLS45X...</td>
+                                                <td>2</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 style="margin-top: 30px;">UNIT (UNIT) - Top Wallets by Volume</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>DORKHJKTKPZPV2ZLS45X...</td>
+                                                <td>54,608</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>GFFFCWJM623AJJGRWPUR...</td>
+                                                <td>17,331.65097</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>FZPGANXMQIHVSWYN6ZXS...</td>
+                                                <td>8,156.130804</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>4</td>
+                                                <td>TP33CGHWFSRX5FPVRUF2...</td>
+                                                <td>6,942.951362</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>5</td>
+                                                <td>RBNFHP5BH7AO24WLK4QA...</td>
+                                                <td>6,000</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>6</td>
+                                                <td>FEOBLGMDYO254OR3THUB...</td>
+                                                <td>4,549</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>7</td>
+                                                <td>C5NZ5SNL5EMOEVKFW3DS...</td>
+                                                <td>1,693.527292</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>8</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>1,550.269365</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>9</td>
+                                                <td>2RMPWZ6VDF5FKNIWLQQR...</td>
+                                                <td>1,547.777817</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>10</td>
+                                                <td>O7FC4I7PX57TSJBN5XOR...</td>
+                                                <td>280.787149</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>DeFi-nite (Finite) - Top Wallets by Frequency</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>P66R6HKPOVBKN7OY2LS7...</td>
+                                                <td>6</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>1</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>EM6YOBT4UOMEGWZO74OL...</td>
+                                                <td>1</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 style="margin-top: 30px;">DeFi-nite (Finite) - Top Wallets by Volume</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>EM6YOBT4UOMEGWZO74OL...</td>
+                                                <td>14,985</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>P66R6HKPOVBKN7OY2LS7...</td>
+                                                <td>1,095.250237</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>1,003.106718</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>Vote Coin (Vote) - Top Wallets by Frequency</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>VVNPL3MM2XWE6XGVP6IL...</td>
+                                                <td>3</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>LPFB7Y6QX2GJILI45MVS...</td>
+                                                <td>2</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>1</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 style="margin-top: 30px;">Vote Coin (Vote) - Top Wallets by Volume</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                            <tr>
+                                                <td>1</td>
+                                                <td>VVNPL3MM2XWE6XGVP6IL...</td>
+                                                <td>123.502335</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>2</td>
+                                                <td>LPFB7Y6QX2GJILI45MVS...</td>
+                                                <td>10.67278</td>
+                                            </tr>
+                                        
+                                            <tr>
+                                                <td>3</td>
+                                                <td>G3MSA75OZEJTCCENOJDL...</td>
+                                                <td>0.861561</td>
+                                            </tr>
+                                        
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+        </div>
+
+        <!-- Time Series Content -->
+        <div id="timeSeries" class="tab-content" style="display: none">
+          <div id="timeSeriesContent">
+                        <h3>Voi (VOI) - Monthly Trends</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transaction Count</th>
+                                        <th>Volume</th>
+                                        <th>Unique Wallets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                        <tr>
+                                            <td>2024-09</td>
+                                            <td>82</td>
+                                            <td>2,043,795.064</td>
+                                            <td>29</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-10</td>
+                                            <td>436</td>
+                                            <td>12,655,629.426</td>
+                                            <td>81</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-11</td>
+                                            <td>320</td>
+                                            <td>6,585,757.585</td>
+                                            <td>56</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-12</td>
+                                            <td>274</td>
+                                            <td>9,083,101.198</td>
+                                            <td>55</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-01</td>
+                                            <td>391</td>
+                                            <td>62,667,436.871</td>
+                                            <td>68</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-02</td>
+                                            <td>603</td>
+                                            <td>70,393,596.421</td>
+                                            <td>74</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-03</td>
+                                            <td>350</td>
+                                            <td>28,526,258.658</td>
+                                            <td>55</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-04</td>
+                                            <td>416</td>
+                                            <td>40,700,850.763</td>
+                                            <td>68</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-05</td>
+                                            <td>271</td>
+                                            <td>19,600,333.465</td>
+                                            <td>52</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-06</td>
+                                            <td>178</td>
+                                            <td>6,408,334.794</td>
+                                            <td>35</td>
+                                        </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>Aramid ALGO (aAlgo) - Monthly Trends</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transaction Count</th>
+                                        <th>Volume</th>
+                                        <th>Unique Wallets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                        <tr>
+                                            <td>2024-09</td>
+                                            <td>3</td>
+                                            <td>2.498</td>
+                                            <td>2</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-10</td>
+                                            <td>22</td>
+                                            <td>5,701.427</td>
+                                            <td>10</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-11</td>
+                                            <td>13</td>
+                                            <td>1,299.646</td>
+                                            <td>7</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-12</td>
+                                            <td>1</td>
+                                            <td>0.399</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-01</td>
+                                            <td>3</td>
+                                            <td>118.63</td>
+                                            <td>2</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-02</td>
+                                            <td>4</td>
+                                            <td>46.678</td>
+                                            <td>3</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-03</td>
+                                            <td>8</td>
+                                            <td>135.395</td>
+                                            <td>3</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-04</td>
+                                            <td>12</td>
+                                            <td>45.954</td>
+                                            <td>3</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-05</td>
+                                            <td>2</td>
+                                            <td>2.003</td>
+                                            <td>2</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-06</td>
+                                            <td>40</td>
+                                            <td>6,639.597</td>
+                                            <td>4</td>
+                                        </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>Aramid USDC (aUSDC) - Monthly Trends</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transaction Count</th>
+                                        <th>Volume</th>
+                                        <th>Unique Wallets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                        <tr>
+                                            <td>2024-09</td>
+                                            <td>18</td>
+                                            <td>6,587.775</td>
+                                            <td>14</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-10</td>
+                                            <td>121</td>
+                                            <td>22,667.323</td>
+                                            <td>20</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-11</td>
+                                            <td>234</td>
+                                            <td>14,409.462</td>
+                                            <td>25</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2024-12</td>
+                                            <td>168</td>
+                                            <td>10,414.747</td>
+                                            <td>19</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-01</td>
+                                            <td>172</td>
+                                            <td>20,514.758</td>
+                                            <td>20</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-02</td>
+                                            <td>411</td>
+                                            <td>32,043.54</td>
+                                            <td>14</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-03</td>
+                                            <td>195</td>
+                                            <td>21,141.974</td>
+                                            <td>16</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-04</td>
+                                            <td>238</td>
+                                            <td>27,447.686</td>
+                                            <td>16</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-05</td>
+                                            <td>160</td>
+                                            <td>18,182.103</td>
+                                            <td>13</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-06</td>
+                                            <td>95</td>
+                                            <td>14,088.602</td>
+                                            <td>15</td>
+                                        </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>Aramid GOLD (aGOLD) - Monthly Trends</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transaction Count</th>
+                                        <th>Volume</th>
+                                        <th>Unique Wallets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                        <tr>
+                                            <td>2024-10</td>
+                                            <td>1</td>
+                                            <td>0.1</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>UNIT (UNIT) - Monthly Trends</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transaction Count</th>
+                                        <th>Volume</th>
+                                        <th>Unique Wallets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                        <tr>
+                                            <td>2024-12</td>
+                                            <td>9</td>
+                                            <td>6.396212</td>
+                                            <td>3</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-01</td>
+                                            <td>51</td>
+                                            <td>94,406.586664</td>
+                                            <td>17</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-02</td>
+                                            <td>5</td>
+                                            <td>1,218.770362</td>
+                                            <td>2</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-03</td>
+                                            <td>2</td>
+                                            <td>99.899839</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-04</td>
+                                            <td>69</td>
+                                            <td>2,180.263737</td>
+                                            <td>6</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-05</td>
+                                            <td>2</td>
+                                            <td>4,664.48947</td>
+                                            <td>2</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-06</td>
+                                            <td>8</td>
+                                            <td>1,506.382414</td>
+                                            <td>3</td>
+                                        </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>DeFi-nite (Finite) - Monthly Trends</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transaction Count</th>
+                                        <th>Volume</th>
+                                        <th>Unique Wallets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                        <tr>
+                                            <td>2024-12</td>
+                                            <td>1</td>
+                                            <td>1,003.106718</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-05</td>
+                                            <td>1</td>
+                                            <td>14,985</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-06</td>
+                                            <td>6</td>
+                                            <td>1,095.250237</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <h3>Vote Coin (Vote) - Monthly Trends</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transaction Count</th>
+                                        <th>Volume</th>
+                                        <th>Unique Wallets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                        <tr>
+                                            <td>2024-12</td>
+                                            <td>1</td>
+                                            <td>0.861561</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-01</td>
+                                            <td>1</td>
+                                            <td>91.476498</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-03</td>
+                                            <td>2</td>
+                                            <td>10.67278</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                        <tr>
+                                            <td>2025-06</td>
+                                            <td>2</td>
+                                            <td>32.025837</td>
+                                            <td>1</td>
+                                        </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let reportData = null;
+      let assetInfo = null;
+      let dexPrices = null;
+      let showUsdValues = true;
+
+      // Load and process the data
+      async function loadData() {
+        try {
+          // Load report data
+          const response = await fetch(
+            "https://raw.githubusercontent.com/AramidFinance/docs/refs/heads/main/static/report-data/2024-09-to-2025-05/data_ARAMIDFJYV2TOFB5MRNZJIXBSAVZCVAUDAPFGKR5PNX4MTILGAZABBTXQQ.json"
+          );
+          reportData = await response.json();
+
+          // Load asset information from Voi mainnet
+          const assetResponse = await fetch(
+            "https://mainnet-idx.voi.nodely.dev/v2/assets?creator=ARAMIDFJYV2TOFB5MRNZJIXBSAVZCVAUDAPFGKR5PNX4MTILGAZABBTXQQ"
+          );
+          const assetData = await assetResponse.json();
+          assetInfo = assetData.assets;
+
+          // Debug: Log available asset IDs
+          console.log(
+            "Available assets from API:",
+            assetInfo.map((a) => ({
+              id: a.index,
+              name: a.params.name,
+              symbol: a.params["unit-name"],
+              decimals: a.params.decimals,
+            }))
+          );
+
+          // Load DEX prices
+          const priceResponse = await fetch(
+            "https://mainnet-idx.nautilus.sh/nft-indexer/v1/dex/prices"
+          );
+          const priceData = await priceResponse.json();
+          dexPrices = priceData.prices;
+
+          console.log("DEX prices loaded:", dexPrices);
+
+          renderDashboard();
+        } catch (error) {
+          console.error("Error loading data:", error);
+          document.getElementById("loading").innerHTML =
+            "Error loading data. Please try again.";
+        }
+      }
+
+      function getAssetDetails(assetId) {
+        if (!assetInfo) return null;
+
+        const asset = assetInfo.find((a) => a.index.toString() === assetId);
+        if (asset) {
+          return {
+            name: asset.params.name,
+            symbol: asset.params["unit-name"],
+            decimals: asset.params.decimals,
+          };
+        }
+
+        // Fallback for assets not found in API (like native VOI/UNIT)
+        if (assetId === "0") {
+          return {
+            name: "Voi",
+            symbol: "VOI",
+            decimals: 6,
+          };
+        }
+
+        // Fallback for asset 747374 as UNIT
+        if (assetId === "747374") {
+          return {
+            name: "UNIT",
+            symbol: "UNIT",
+            decimals: 8,
+          };
+        }
+
+        console.warn(`Asset ${assetId} not found in API response`);
+        return null;
+      }
+
+      function getAssetPriceInVoi(assetSymbol) {
+        if (!dexPrices) return null;
+
+        // Find pool with asset vs VOI
+        const pool = dexPrices.find(
+          (p) =>
+            (p.symbolA === assetSymbol && p.symbolB === "VOI") ||
+            (p.symbolA === "VOI" && p.symbolB === assetSymbol)
+        );
+
+        if (pool) {
+          if (pool.symbolA === assetSymbol) {
+            // asset/VOI price - need to invert to get VOI/asset
+            return 1 / pool.price;
+          } else {
+            // VOI/asset price - use directly
+            return pool.price;
+          }
+        }
+
+        return null;
+      }
+
+      function convertUsdToVoi(usdValue, assetId) {
+        const assetDetails = getAssetDetails(assetId);
+        if (!assetDetails) return 0;
+
+        // For VOI (asset ID 0), the total VOI value is the total volume
+        if (assetId === "0") {
+          const metrics = reportData.asa_analysis[assetId].metrics;
+          return metrics.total_volume;
+        }
+
+        // For UNIT (asset ID 747374), use the specific value
+        if (assetId === "747374") {
+          const metrics = reportData.asa_analysis[assetId].metrics;
+          return metrics.total_volume / 0.004743632475887982 / 10 ** 8;
+        }
+        if (assetId === "859317") {
+          const metrics = reportData.asa_analysis[assetId].metrics;
+          return metrics.total_volume / 0.14618844426659725 / 10 ** 8;
+        }
+        if (assetId === "797369") {
+          const metrics = reportData.asa_analysis[assetId].metrics;
+          return metrics.total_volume / 0.14618844426659725 / 10 ** 8;
+        }
+        if (assetId === "797372") {
+          const metrics = reportData.asa_analysis[assetId].metrics;
+          return metrics.total_volume / 0.08452083982481368 / 10 ** 6;
+        }
+
+        const assetPriceInVoi = getAssetPriceInVoi(assetDetails.symbol);
+
+        console.log(`VOI conversion for ${assetDetails.symbol}:`, {
+          usdValue,
+          assetPriceInVoi,
+          voiValue: usdValue * assetPriceInVoi,
+        });
+
+        if (assetPriceInVoi) {
+          // Convert USD value to VOI value
+          return usdValue * assetPriceInVoi;
+        }
+
+        return 0;
+      }
+
+      function formatAssetValue(value, assetId) {
+        // Apply normalization to DeFi-nite (asset ID 797369) with 8 decimals
+        if (assetId === "797369") {
+          const normalizedValue = value / Math.pow(10, 8); // DeFi-nite has 8 decimals
+          return normalizedValue.toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          });
+        }
+        // Apply normalization to Vote Coin (asset ID 797372) with 6 decimals
+        if (assetId === "797372") {
+          const normalizedValue = value / Math.pow(10, 6); // Vote Coin has 6 decimals
+          return normalizedValue.toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          });
+        }
+        // Apply normalization to UNIT (asset ID 747374) with 8 decimals
+        if (assetId === "747374") {
+          const normalizedValue = value / Math.pow(10, 8); // UNIT has 8 decimals
+          return normalizedValue.toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          });
+        }
+        return value.toLocaleString();
+      }
+
+      function renderDashboard() {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+
+        renderStats();
+        renderTransactionTypeChart();
+        renderUserEngagementChart();
+        renderRevenueChart();
+        renderHeatmap();
+        renderMonthlyUsersChart();
+        renderAssets();
+        renderLeaderboards();
+        renderTimeSeries();
+      }
+
+      function renderStats() {
+        const statsGrid = document.getElementById("statsGrid");
+
+        // Calculate total fees (0.1% of total value)
+        const assets = reportData.asa_analysis;
+        let totalValue = 0;
+
+        Object.entries(assets).forEach(([assetId, asset]) => {
+          const voiValue = convertUsdToVoi(
+            asset.metrics.total_usd_value,
+            assetId
+          );
+          totalValue += voiValue;
+        });
+
+        const feesVoi = totalValue * 0.001; // 0.1%
+        const feesUsd = feesVoi * 0.0010546552809177472;
+
+        const feesDisplay = showUsdValues
+          ? `$${feesUsd.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}`
+          : `${feesVoi.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })} VOI`;
+
+        const blockRewardsVoi = 4046250.883;
+        const blockRewardsUsd = blockRewardsVoi * 0.0010546552809177472;
+        const blockRewardsDisplay = showUsdValues
+          ? `$${blockRewardsUsd.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}`
+          : `${blockRewardsVoi.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })} VOI`;
+
+        const totalRevenueVoi = blockRewardsVoi + feesVoi;
+        const totalRevenueUsd = blockRewardsUsd + feesUsd;
+        const totalRevenueDisplay = showUsdValues
+          ? `$${totalRevenueUsd.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}`
+          : `${totalRevenueVoi.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })} VOI`;
+
+        const totalCostUsd = 9500;
+        const totalCostVoi = totalCostUsd / 0.0010546552809177472;
+        const totalCostDisplay = showUsdValues
+          ? `$${totalCostUsd.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}`
+          : `${totalCostVoi.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })} VOI`;
+
+        const burnRateUsd = 1000;
+        const burnRateVoi = burnRateUsd / 0.0010546552809177472;
+        const burnRateDisplay = showUsdValues
+          ? `$${burnRateUsd.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}/mo`
+          : `${burnRateVoi.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })} VOI/mo`;
+
+        // Calculate sustainability (months of runway)
+        const netRevenue = totalRevenueVoi - totalCostVoi;
+        const sustainabilityMonths = netRevenue / burnRateVoi;
+        const sustainabilityDisplay =
+          sustainabilityMonths > 0
+            ? `${sustainabilityMonths.toFixed(1)} months`
+            : "0 months";
+
+        const avgBlockRewardsVoi = 866666;
+        const avgBlockRewardsUsd = avgBlockRewardsVoi * 0.0010546552809177472;
+        const avgBlockRewardsDisplay = showUsdValues
+          ? `$${avgBlockRewardsUsd.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}/mo`
+          : `${avgBlockRewardsVoi.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })} VOI/mo`;
+
+        const stats = [
+          {
+            label: "Total Transactions",
+            value: reportData.metadata.total_transactions.toLocaleString(),
+            icon: "📊",
+          },
+          {
+            label: "Unique Wallets",
+            value:
+              reportData.global_stats.total_unique_wallets.toLocaleString(),
+            icon: "👥",
+          },
+          {
+            label: "Total Users",
+            value:
+              reportData.global_stats.user_engagement_metrics.total_users.toLocaleString(),
+            icon: "👤",
+          },
+          {
+            label: "Returning Users",
+            value:
+              reportData.global_stats.user_engagement_metrics.returning_users.toLocaleString(),
+            icon: "🔄",
+          },
+          {
+            label: "Power Users",
+            value:
+              reportData.global_stats.user_engagement_metrics.power_users.toLocaleString(),
+            icon: "⭐",
+          },
+          {
+            label: "Team",
+            value: "5 (+3)",
+            icon: "👨‍💼",
+          },
+          {
+            label: "Grant",
+            value: "0",
+            icon: "🎯",
+          },
+          {
+            label: "Total Cost",
+            value: totalCostDisplay,
+            icon: "💸",
+          },
+          {
+            label: "Total Revenue",
+            value: totalRevenueDisplay,
+            icon: "💎",
+          },
+          {
+            label: "Block Rewards",
+            value: blockRewardsDisplay,
+            icon: "🏆",
+          },
+          {
+            label: "Fees (0.1%)",
+            value: feesDisplay,
+            icon: "💰",
+          },
+          {
+            label: "Burn Rate",
+            value: burnRateDisplay,
+            icon: "🔥",
+          },
+          {
+            label: "Soldiers",
+            value: "4",
+            icon: "⚔️",
+          },
+          {
+            label: "Average Block Rewards",
+            value: avgBlockRewardsDisplay,
+            icon: "🏆",
+          },
+        ];
+
+        statsGrid.innerHTML = stats
+          .map(
+            (stat) => `
+                <div class="stat-card">
+                    <h3>${stat.icon} ${stat.label}</h3>
+                    <div class="value">${stat.value}</div>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      function renderTransactionTypeChart() {
+        const ctx = document
+          .getElementById("transactionTypeChart")
+          .getContext("2d");
+        const data = reportData.global_stats.transaction_type_distribution;
+
+        new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: Object.keys(data).map((key) => key.toUpperCase()),
+            datasets: [
+              {
+                data: Object.values(data),
+                backgroundColor: ["#667eea", "#764ba2", "#f093fb", "#f5576c"],
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+            },
+          },
+        });
+      }
+
+      function renderUserEngagementChart() {
+        const ctx = document
+          .getElementById("userEngagementChart")
+          .getContext("2d");
+        const data = reportData.global_stats.user_engagement_metrics;
+
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: ["Total Users", "Returning Users", "Power Users"],
+            datasets: [
+              {
+                label: "User Count",
+                data: [
+                  data.total_users,
+                  data.returning_users,
+                  data.power_users,
+                ],
+                backgroundColor: ["#667eea", "#764ba2", "#f093fb"],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+
+      function renderRevenueChart() {
+        const ctx = document.getElementById("revenueChart").getContext("2d");
+
+        // Calculate revenue components
+        const assets = reportData.asa_analysis;
+        let totalValue = 0;
+
+        Object.entries(assets).forEach(([assetId, asset]) => {
+          const voiValue = convertUsdToVoi(
+            asset.metrics.total_usd_value,
+            assetId
+          );
+          totalValue += voiValue;
+        });
+
+        const feesVoi = totalValue * 0.001; // 0.1%
+        const blockRewardsVoi = 4046250.883;
+
+        const revenueData = [
+          {
+            label: "Block Rewards",
+            value: blockRewardsVoi,
+            color: "#667eea",
+          },
+          {
+            label: "Fees (0.1%)",
+            value: feesVoi,
+            color: "#764ba2",
+          },
+          {
+            label: "Grant",
+            value: 0,
+            color: "#f093fb",
+          },
+        ];
+
+        new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: revenueData.map((item) => item.label),
+            datasets: [
+              {
+                data: revenueData.map((item) => item.value),
+                backgroundColor: revenueData.map((item) => item.color),
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    const value = context.parsed;
+                    const total = revenueData.reduce(
+                      (sum, item) => sum + item.value,
+                      0
+                    );
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return `${context.label}: ${value.toLocaleString(
+                      undefined,
+                      { maximumFractionDigits: 2 }
+                    )} VOI (${percentage}%)`;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function renderHeatmap() {
+        const heatmap = document.getElementById("heatmap");
+        const { days, hours, matrix } =
+          reportData.global_stats.activity_heatmap;
+
+        // Find max value for color scaling
+        const maxValue = Math.max(...matrix.flat());
+
+        let html = '<div class="heatmap-header"><div></div>';
+        hours.forEach((hour) => {
+          html += `<div>${hour}</div>`;
+        });
+        html += "</div>";
+
+        days.forEach((day, dayIndex) => {
+          html += '<div class="heatmap-row">';
+          html += `<div>${day}</div>`;
+          hours.forEach((hour, hourIndex) => {
+            const value = matrix[dayIndex][hourIndex];
+            const intensity = value / maxValue;
+            const backgroundColor = `rgba(102, 126, 234, ${intensity})`;
+            html += `<div class="heatmap-cell" style="background-color: ${backgroundColor}" title="${day} ${hour}:00 - ${value} transactions">${value}</div>`;
+          });
+          html += "</div>";
+        });
+
+        heatmap.innerHTML = html;
+      }
+
+      function renderMonthlyUsersChart() {
+        const ctx = document
+          .getElementById("monthlyUsersChart")
+          .getContext("2d");
+        const data = reportData.global_stats.monthly_user_dynamics;
+
+        const months = Object.keys(data).sort();
+        const newUsers = months.map((month) => data[month].new || 0);
+        const returningUsers = months.map(
+          (month) => data[month].returning || 0
+        );
+
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: months.map((month) => {
+              const [year, monthNum] = month.split("-");
+              return new Date(year, monthNum - 1).toLocaleDateString("en-US", {
+                month: "short",
+                year: "numeric",
+              });
+            }),
+            datasets: [
+              {
+                label: "New Users",
+                data: newUsers,
+                borderColor: "#667eea",
+                backgroundColor: "rgba(102, 126, 234, 0.1)",
+                fill: true,
+              },
+              {
+                label: "Returning Users",
+                data: returningUsers,
+                borderColor: "#764ba2",
+                backgroundColor: "rgba(118, 75, 162, 0.1)",
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "top",
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+
+      function renderAssets() {
+        const assetsContent = document.getElementById("assetsContent");
+        const assets = reportData.asa_analysis;
+
+        console.log("Assets in report data:", Object.keys(assets));
+        console.log(
+          "Available assets from API:",
+          assetInfo ? assetInfo.map((a) => a.index) : "No asset info"
+        );
+
+        let html = "";
+        Object.entries(assets).forEach(([assetId, asset]) => {
+          const metrics = asset.metrics;
+          const assetDetails = getAssetDetails(assetId);
+
+          console.log(`Processing asset ${assetId}:`, assetDetails);
+
+          if (assetDetails) {
+            let assetName = assetDetails.name;
+            let assetSymbol = assetDetails.symbol;
+
+            // Calculate the value based on current mode
+            const voiValue = convertUsdToVoi(metrics.total_usd_value, assetId);
+            const displayValue = showUsdValues
+              ? `$${(voiValue * 0.0010546552809177472).toLocaleString(
+                  undefined,
+                  { maximumFractionDigits: 2 }
+                )}`
+              : `${voiValue.toLocaleString(undefined, {
+                  maximumFractionDigits: 2,
+                })} VOI`;
+            const displayLabel = showUsdValues
+              ? "Total USD Value"
+              : "Total VOI Value";
+
+            html += `
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">${assetName}</div>
+                                <div class="asset-symbol">${assetSymbol}</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">${metrics.tx_count.toLocaleString()}</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${metrics.unique_wallets.toLocaleString()}</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${formatAssetValue(
+                                      metrics.total_volume,
+                                      assetId
+                                    )}</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${formatAssetValue(
+                                      metrics.avg_tx_volume,
+                                      assetId
+                                    )}</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${
+                                      metrics.net_flow > 0 ? "+" : ""
+                                    }${formatAssetValue(
+              Math.abs(metrics.net_flow),
+              assetId
+            )}</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${displayValue}</div>
+                                    <div class="metric-label">${displayLabel}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+          } else {
+            // Show asset even if not found in API
+            console.warn(
+              `Asset ${assetId} not found in API, showing with fallback info`
+            );
+
+            // Calculate the value based on current mode
+            const voiValue = convertUsdToVoi(metrics.total_usd_value, assetId);
+            const displayValue = showUsdValues
+              ? `$${(voiValue * 0.0010546552809177472).toLocaleString(
+                  undefined,
+                  { maximumFractionDigits: 2 }
+                )}`
+              : `${voiValue.toLocaleString(undefined, {
+                  maximumFractionDigits: 2,
+                })} VOI`;
+            const displayLabel = showUsdValues
+              ? "Total USD Value"
+              : "Total VOI Value";
+
+            html += `
+                        <div class="asset-card">
+                            <div class="asset-header">
+                                <div class="asset-name">Asset ${assetId}</div>
+                                <div class="asset-symbol">ID-${assetId}</div>
+                            </div>
+                            <div class="asset-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">${metrics.tx_count.toLocaleString()}</div>
+                                    <div class="metric-label">Transactions</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${metrics.unique_wallets.toLocaleString()}</div>
+                                    <div class="metric-label">Unique Wallets</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${formatAssetValue(
+                                      metrics.total_volume,
+                                      assetId
+                                    )}</div>
+                                    <div class="metric-label">Total Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${formatAssetValue(
+                                      metrics.avg_tx_volume,
+                                      assetId
+                                    )}</div>
+                                    <div class="metric-label">Avg TX Volume</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${
+                                      metrics.net_flow > 0 ? "+" : ""
+                                    }${formatAssetValue(
+              Math.abs(metrics.net_flow),
+              assetId
+            )}</div>
+                                    <div class="metric-label">Net Flow</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${displayValue}</div>
+                                    <div class="metric-label">${displayLabel}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+          }
+        });
+
+        assetsContent.innerHTML = html;
+      }
+
+      function renderLeaderboards() {
+        const leaderboardsContent = document.getElementById(
+          "leaderboardsContent"
+        );
+        const assets = reportData.asa_analysis;
+
+        let html = "";
+        Object.entries(assets).forEach(([assetId, asset]) => {
+          const assetDetails = getAssetDetails(assetId);
+
+          if (assetDetails) {
+            let assetName = assetDetails.name;
+            let assetSymbol = assetDetails.symbol;
+
+            html += `
+                        <h3>${assetName} (${assetSymbol}) - Top Wallets by Frequency</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Transaction Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${Object.entries(
+                                      asset.leaderboards.top_wallets_by_freq
+                                    )
+                                      .sort(([, a], [, b]) => b - a)
+                                      .slice(0, 10)
+                                      .map(
+                                        ([wallet, count], index) => `
+                                            <tr>
+                                                <td>${index + 1}</td>
+                                                <td>${wallet.substring(
+                                                  0,
+                                                  20
+                                                )}...</td>
+                                                <td>${count.toLocaleString()}</td>
+                                            </tr>
+                                        `
+                                      )
+                                      .join("")}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 style="margin-top: 30px;">${assetName} (${assetSymbol}) - Top Wallets by Volume</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Wallet Address</th>
+                                        <th>Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${Object.entries(
+                                      asset.leaderboards.top_wallets_by_vol
+                                    )
+                                      .sort(([, a], [, b]) => b - a)
+                                      .slice(0, 10)
+                                      .map(
+                                        ([wallet, volume], index) => `
+                                            <tr>
+                                                <td>${index + 1}</td>
+                                                <td>${wallet.substring(
+                                                  0,
+                                                  20
+                                                )}...</td>
+                                                <td>${formatAssetValue(
+                                                  volume,
+                                                  assetId
+                                                )}</td>
+                                            </tr>
+                                        `
+                                      )
+                                      .join("")}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+          }
+        });
+
+        leaderboardsContent.innerHTML = html;
+      }
+
+      function renderTimeSeries() {
+        const timeSeriesContent = document.getElementById("timeSeriesContent");
+        const assets = reportData.asa_analysis;
+
+        let html = "";
+        Object.entries(assets).forEach(([assetId, asset]) => {
+          const timeSeries = asset.time_series;
+          const months = Object.keys(timeSeries.monthly_tx_count).sort();
+
+          const assetDetails = getAssetDetails(assetId);
+
+          if (assetDetails) {
+            let assetName = assetDetails.name;
+            let assetSymbol = assetDetails.symbol;
+
+            html += `
+                        <h3>${assetName} (${assetSymbol}) - Monthly Trends</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Transaction Count</th>
+                                        <th>Volume</th>
+                                        <th>Unique Wallets</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${months
+                                      .map(
+                                        (month) => `
+                                        <tr>
+                                            <td>${month}</td>
+                                            <td>${
+                                              timeSeries.monthly_tx_count[
+                                                month
+                                              ]?.toLocaleString() || "0"
+                                            }</td>
+                                            <td>${formatAssetValue(
+                                              timeSeries.monthly_volume[
+                                                month
+                                              ] || 0,
+                                              assetId
+                                            )}</td>
+                                            <td>${
+                                              timeSeries.monthly_unique_wallets[
+                                                month
+                                              ]?.toLocaleString() || "0"
+                                            }</td>
+                                        </tr>
+                                    `
+                                      )
+                                      .join("")}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+          }
+        });
+
+        timeSeriesContent.innerHTML = html;
+      }
+
+      function showTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.style.display = "none";
+        });
+
+        // Remove active class from all tabs
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+
+        // Show selected tab content
+        document.getElementById(tabName).style.display = "block";
+
+        // Add active class to selected tab
+        event.target.classList.add("active");
+      }
+
+      function toggleValueDisplay() {
+        showUsdValues = !showUsdValues;
+
+        // Update button text
+        const toggleButton = document.getElementById("valueToggle");
+        toggleButton.textContent = showUsdValues
+          ? "Show VOI Values"
+          : "Show USD Values";
+
+        // Re-render assets and stats to update the display
+        renderAssets();
+        renderStats();
+      }
+
+      // Initialize the dashboard
+      loadData();
+
+      function downloadMarkdown() {
+        if (!reportData) return;
+        
+        // Calculate display values for markdown
+        const assets = reportData.asa_analysis;
+        let totalValue = 0;
+        
+        Object.entries(assets).forEach(([assetId, asset]) => {
+          const voiValue = convertUsdToVoi(asset.metrics.total_usd_value, assetId);
+          totalValue += voiValue;
+        });
+        
+        const feesVoi = totalValue * 0.001;
+        const feesUsd = feesVoi * 0.0010546552809177472;
+        const feesDisplay = showUsdValues 
+          ? `$${feesUsd.toLocaleString(undefined, {maximumFractionDigits: 2})}`
+          : `${feesVoi.toLocaleString(undefined, {maximumFractionDigits: 2})} VOI`;
+        
+        const blockRewardsVoi = 4046250.883;
+        const blockRewardsUsd = blockRewardsVoi * 0.0010546552809177472;
+        const blockRewardsDisplay = showUsdValues 
+          ? `$${blockRewardsUsd.toLocaleString(undefined, {maximumFractionDigits: 2})}`
+          : `${blockRewardsVoi.toLocaleString(undefined, {maximumFractionDigits: 2})} VOI`;
+        
+        const totalRevenueVoi = blockRewardsVoi + feesVoi;
+        const totalRevenueUsd = blockRewardsUsd + feesUsd;
+        const totalRevenueDisplay = showUsdValues 
+          ? `$${totalRevenueUsd.toLocaleString(undefined, {maximumFractionDigits: 2})}`
+          : `${totalRevenueVoi.toLocaleString(undefined, {maximumFractionDigits: 2})} VOI`;
+
+        const totalCostUsd = 9500;
+        const totalCostVoi = totalCostUsd / 0.0010546552809177472;
+        const totalCostDisplay = showUsdValues
+          ? `$${totalCostUsd.toLocaleString(undefined, {maximumFractionDigits: 2})}`
+          : `${totalCostVoi.toLocaleString(undefined, {maximumFractionDigits: 2})} VOI`;
+
+        const burnRateUsd = 1000;
+        const burnRateVoi = burnRateUsd / 0.0010546552809177472;
+        const burnRateDisplay = showUsdValues
+          ? `$${burnRateUsd.toLocaleString(undefined, {maximumFractionDigits: 2})}/mo`
+          : `${burnRateVoi.toLocaleString(undefined, {maximumFractionDigits: 2})} VOI/mo`;
+
+        const avgBlockRewardsVoi = 866666;
+        const avgBlockRewardsUsd = avgBlockRewardsVoi * 0.0010546552809177472;
+        const avgBlockRewardsDisplay = showUsdValues
+          ? `$${avgBlockRewardsUsd.toLocaleString(undefined, {maximumFractionDigits: 2})}/mo`
+          : `${avgBlockRewardsVoi.toLocaleString(undefined, {maximumFractionDigits: 2})} VOI/mo`;
+        
+        let markdown = `# Aramid Finance Analytics Report\n\n`;
+        markdown += `**Period:** September 2024 - May 2025\n\n`;
+        
+        // Add stats
+        markdown += `## Key Statistics\n\n`;
+        markdown += `- Total Transactions: ${reportData.metadata.total_transactions.toLocaleString()}\n`;
+        markdown += `- Unique Wallets: ${reportData.global_stats.total_unique_wallets.toLocaleString()}\n`;
+        markdown += `- Total Users: ${reportData.global_stats.user_engagement_metrics.total_users.toLocaleString()}\n`;
+        markdown += `- Returning Users: ${reportData.global_stats.user_engagement_metrics.returning_users.toLocaleString()}\n`;
+        markdown += `- Power Users: ${reportData.global_stats.user_engagement_metrics.power_users.toLocaleString()}\n`;
+        markdown += `- Team: 5 (+3)\n`;
+        markdown += `- Grant: 0\n`;
+        markdown += `- Total Cost: ${totalCostDisplay}\n`;
+        markdown += `- Total Revenue: ${totalRevenueDisplay}\n`;
+        markdown += `- Block Rewards: ${blockRewardsDisplay}\n`;
+        markdown += `- Fees (0.1%): ${feesDisplay}\n`;
+        markdown += `- Burn Rate: ${burnRateDisplay}\n`;
+        markdown += `- Soldiers: 4\n`;
+        markdown += `- Average Block Rewards: ${avgBlockRewardsDisplay}\n\n`;
+        
+        // Add asset analysis
+        markdown += `## Asset Analysis\n\n`;
+        Object.entries(reportData.asa_analysis).forEach(([assetId, asset]) => {
+          const assetDetails = getAssetDetails(assetId);
+          const name = assetDetails ? assetDetails.name : `Asset ${assetId}`;
+          const symbol = assetDetails ? assetDetails.symbol : `ID-${assetId}`;
+          
+          markdown += `### ${name} (${symbol})\n\n`;
+          markdown += `- Transactions: ${asset.metrics.tx_count.toLocaleString()}\n`;
+          markdown += `- Unique Wallets: ${asset.metrics.unique_wallets.toLocaleString()}\n`;
+          markdown += `- Total Volume: ${formatAssetValue(asset.metrics.total_volume, assetId)}\n`;
+          markdown += `- Average TX Volume: ${formatAssetValue(asset.metrics.avg_tx_volume, assetId)}\n`;
+          markdown += `- Net Flow: ${asset.metrics.net_flow > 0 ? '+' : ''}${formatAssetValue(Math.abs(asset.metrics.net_flow), assetId)}\n\n`;
+        });
+        
+        downloadFile(markdown, 'aramid-finance-report.md', 'text/markdown');
+      }
+
+      function downloadPDF() {
+        // For PDF, we'll use the browser's print functionality
+        window.print();
+      }
+
+      function downloadHTML() {
+        // Create a standalone HTML version
+        const standaloneHTML = document.documentElement.outerHTML;
+        downloadFile(standaloneHTML, 'aramid-finance-report.html', 'text/html');
+      }
+
+      function downloadFile(content, filename, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    </script>
+  
+
+</body></html>
